@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="th" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เกมคำนวณการเปลี่ยนหน่วยอุณหภูมิ ม.1 | Thermal Energy Arena</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts: Prompt & Sarabun -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Prompt', 'Sarabun', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            900: '#312e81',
+                            950: '#0f172a'
+                        }
+                    },
+                    animation: {
+                        'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'bounce-short': 'bounce 0.8s infinite',
+                        'glow': 'glow 2s ease-in-out infinite alternate',
+                    },
+                    keyframes: {
+                        glow: {
+                            '0%': { boxShadow: '0 0 15px rgba(6, 182, 212, 0.4)' },
+                            '100%': { boxShadow: '0 0 35px rgba(6, 182, 212, 0.9)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Prompt', 'Sarabun', sans-serif;
+            background: radial-gradient(circle at top center, #1e1b4b 0%, #0f172a 60%, #020617 100%);
+            color: #f8fafc;
+            min-height: 100vh;
+            user-select: none;
+        }
+
+        /* Glassmorphism Styling */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card:hover {
+            border-color: rgba(56, 189, 248, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(14, 165, 233, 0.25);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.5);
+            border-radius: 4px;
+        }
+
+        /* Gradient Text */
+        .text-gradient-cyan {
+            background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .text-gradient-gold {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Active Group Glow */
+        .active-turn-ring {
+            box-shadow: 0 0 25px #06b6d4, inset 0 0 15px rgba(6, 182, 212, 0.3);
+            border-color: #22d3ee !important;
+        }
+
+        /* Steal Alert Glow */
+        .steal-active-ring {
+            box-shadow: 0 0 30px #f43f5e, inset 0 0 20px rgba(244, 63, 94, 0.4);
+            animation: pulse-ring 1.2s infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        canvas#confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen justify-between overflow-x-hidden">
+
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- TOP NAVBAR FOR CLASSROOM DISPLAY -->
+    <header class="w-full glass-panel border-b border-indigo-500/20 px-6 py-3 flex justify-between items-center z-20">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-cyan-500/30">
+                <i class="fa-solid fa-temperature-arrow-up text-white text-xl"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-xl tracking-wide text-white flex items-center gap-2">
+                    THERMAL ENERGY <span class="text-xs px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-normal">วิทยาศาสตร์ ม.1</span>
+                </h1>
+                <p class="text-xs text-slate-400">หน่วยพลังงานความร้อน: การแปลงหน่วยและการเปลี่ยนอุณหภูมิ</p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <button id="btn-sound-toggle" onclick="toggleSound()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm flex items-center gap-2 border border-slate-700 transition">
+                <i id="sound-icon" class="fa-solid fa-volume-high text-cyan-400"></i>
+                <span id="sound-text">เปิดเสียง</span>
+            </button>
+            <button onclick="openFormulaModal()" class="px-4 py-1.5 rounded-lg bg-indigo-600/80 hover:bg-indigo-500 text-white font-medium text-sm flex items-center gap-2 shadow-md shadow-indigo-600/30 transition border border-indigo-400/30">
+                <i class="fa-solid fa-calculator text-amber-300"></i>
+                <span>สูตรคำนวณ</span>
+            </button>
+            <button id="btn-restart-game" onclick="confirmResetGame()" class="hidden px-3 py-1.5 rounded-lg bg-rose-900/40 hover:bg-rose-800/60 text-rose-200 text-sm border border-rose-700/50 transition">
+                <i class="fa-solid fa-rotate-left"></i> ตั้งค่าใหม่
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col justify-center relative z-10">
+
+        <!-- SETUP SCREEN -->
+        <section id="setup-screen" class="w-full max-w-3xl mx-auto glass-panel rounded-3xl p-8 border border-slate-700/60 shadow-2xl my-auto">
+            <div class="text-center mb-8">
+                <div class="inline-block p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 mb-3">
+                    <i class="fa-solid fa-fire-flame-curved text-4xl text-amber-400 animate-bounce"></i>
+                </div>
+                <h2 class="text-3xl font-extrabold text-white tracking-wide">ตั้งค่าห้องเรียนแข่งขันคำนวณ</h2>
+                <p class="text-slate-400 mt-1">วิชาวิทยาศาสตร์ ม.1 เรื่อง การเปลี่ยนหน่วยและอุณหภูมิที่เปลี่ยนแปลง</p>
+            </div>
+
+            <div class="space-y-6">
+                <!-- Group Count Selection -->
+                <div>
+                    <label class="block text-sm font-semibold text-cyan-300 mb-2">
+                        <i class="fa-solid fa-users text-cyan-400 mr-2"></i> จำนวนกลุ่มแข่งขัน (1 - 8 กลุ่ม):
+                    </label>
+                    <div class="grid grid-cols-4 sm:grid-cols-8 gap-2">
+                        <button type="button" onclick="setGroupCount(1)" class="btn-group-count py-2.5 rounded-xl font-bold border transition bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-200" data-count="1">1</button>
+                        <button type="button" onclick="setGroupCount(2)" class="btn-group-count py-2.5 rounded-xl font-bold border transition bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-200" data-count="2">2</button>
+                        <button type="button" onclick="setGroupCount(3)" class="btn-group-count py-2.5 rounded-xl font-bold border transition bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-200" data-count="3">3</button>
+                        <button type="button" onclick="setGroupCount(4)" class="btn-group-count py-2.5 rounded-xl font-bold border transition bg-indigo-600 border-indigo-400 text-white shadow-lg shadow-indigo-500/30" data-count="4">4</button>
+                        <button type="button" onclick="setGroupCount(5)" class="btn-group-count py-2.5 rounded-xl font-bold border transition bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-200" data-count="5">5</button>
+                        <button type="button" onclick="setGroupCount(6)" class="btn-group-count py-2.5 rounded-xl font-bold border transition bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-200" data-count="6">6</button>
+                        <button type="button" onclick="setGroupCount(7)" class="btn-group-count py-2.5 rounded-xl font-bold border transition bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-200" data-count="7">7</button>
+                        <button type="button" onclick="setGroupCount(8)" class="btn-group-count py-2.5 rounded-xl font-bold border transition bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-200" data-count="8">8</button>
+                    </div>
+                </div>
+
+                <!-- Custom Group Names Grid -->
+                <div>
+                    <label class="block text-sm font-semibold text-cyan-300 mb-2">
+                        <i class="fa-solid fa-pen-to-square text-cyan-400 mr-2"></i> ชื่อแต่ละกลุ่ม:
+                    </label>
+                    <div id="group-inputs-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-48 overflow-y-auto pr-1">
+                        <!-- Dynamic inputs injected by JS -->
+                    </div>
+                </div>
+
+                <!-- Timer Configuration -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-cyan-300 mb-2">
+                            <i class="fa-solid fa-stopwatch text-cyan-400 mr-2"></i> เวลาต่อโจทย์ 1 ข้อ:
+                        </label>
+                        <select id="timer-select" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-200 font-medium focus:border-cyan-400 focus:outline-none">
+                            <option value="30">30 วินาที (เร็ว)</option>
+                            <option value="45" selected>45 วินาที (แนะนำ)</option>
+                            <option value="60">60 วินาที (มาตรฐาน)</option>
+                            <option value="90">90 วินาที (ผ่อนคลาย)</option>
+                            <option value="0">ไม่จับเวลา (Unlimited)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-cyan-300 mb-2">
+                            <i class="fa-solid fa-list-ol text-cyan-400 mr-2"></i> จำนวนข้อที่ต้องการเล่น:
+                        </label>
+                        <select id="question-count-select" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-200 font-medium focus:border-cyan-400 focus:outline-none">
+                            <option value="10">10 ข้อ</option>
+                            <option value="15" selected>15 ข้อ (ครบรอบเนื้อหา)</option>
+                            <option value="18">18 ข้อ (เล่นโจทย์ทั้งหมด)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Start Button -->
+                <div class="pt-4">
+                    <button onclick="startGame()" class="w-full py-4 rounded-2xl bg-gradient-to-r from-cyan-500 via-indigo-600 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-bold text-xl shadow-xl shadow-cyan-500/25 transition-all transform hover:scale-[1.01] flex items-center justify-center gap-3">
+                        <i class="fa-solid fa-rocket text-2xl text-amber-300"></i>
+                        <span>เริ่มการแข่งขัน (Start Game)</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- GAMEPLAY SCREEN -->
+        <section id="game-screen" class="hidden flex-col gap-5 w-full">
+
+            <!-- LEADERBOARD BAR -->
+            <div id="leaderboard-bar" class="w-full grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+                <!-- Group Score Cards dynamically injected -->
+            </div>
+
+            <!-- STEAL BANNER (Hidden by default, shown during steal mode) -->
+            <div id="steal-alert-banner" class="hidden w-full glass-panel border-2 border-rose-500 bg-rose-950/80 rounded-2xl p-4 shadow-2xl text-center animate-pulse-fast">
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <span class="w-12 h-12 rounded-full bg-rose-600 flex items-center justify-center text-2xl text-white shadow-lg animate-bounce-short">
+                            <i class="fa-solid fa-bell"></i>
+                        </span>
+                        <div class="text-left">
+                            <h3 class="text-xl font-extrabold text-rose-200 tracking-wider">🚨 สิทธิ์แย่งตอบ! (STEAL MODE ACTIVE)</h3>
+                            <p class="text-xs text-rose-300">กลุ่มเดิมตอบผิดหรือหมดเวลา! เลือกกลุ่มที่ยกมือก่อนเพื่อชิงคะแนน (+10 คะแนน)</p>
+                        </div>
+                    </div>
+                    <div id="steal-team-buttons" class="flex flex-wrap gap-2 justify-center">
+                        <!-- Buttons for other teams injected here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- MAIN QUESTION DASHBOARD CARD -->
+            <div class="w-full glass-panel rounded-3xl p-6 sm:p-8 border border-indigo-500/30 shadow-2xl flex flex-col gap-6 relative overflow-hidden">
+                
+                <!-- TOP META: Turn Indicator, Category, & Timer -->
+                <div class="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-700/60">
+                    
+                    <!-- Turn Badge -->
+                    <div class="flex items-center gap-3">
+                        <div id="turn-avatar" class="w-12 h-12 rounded-2xl bg-cyan-500 flex items-center justify-center text-slate-900 font-extrabold text-xl shadow-lg shadow-cyan-500/30">
+                            G1
+                        </div>
+                        <div>
+                            <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold block">ตาของกลุ่ม (Current Turn)</span>
+                            <h2 id="turn-group-name" class="text-2xl font-bold text-cyan-300 tracking-wide">กลุ่มที่ 1</h2>
+                        </div>
+                    </div>
+
+                    <!-- Question Number & Category -->
+                    <div class="flex items-center gap-2">
+                        <span id="question-progress" class="px-3.5 py-1.5 rounded-full bg-slate-800 text-slate-300 text-xs font-semibold border border-slate-700">
+                            ข้อที่ 1 / 15
+                        </span>
+                        <span id="question-category" class="px-3.5 py-1.5 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-semibold border border-indigo-500/40">
+                            หมวด: แปลงหน่วย °C ↔ K
+                        </span>
+                    </div>
+
+                    <!-- Timer Bar / Widget -->
+                    <div id="timer-box" class="flex items-center gap-3 bg-slate-900/90 px-4 py-2 rounded-2xl border border-slate-700">
+                        <i class="fa-solid fa-clock text-amber-400 text-xl"></i>
+                        <span id="timer-text" class="text-2xl font-black font-mono text-amber-400 min-w-[3.5rem] text-center">45s</span>
+                    </div>
+                </div>
+
+                <!-- QUESTION DISPLAY AREA -->
+                <div class="py-2">
+                    <h3 id="question-text" class="text-2xl sm:text-3xl font-bold text-white leading-relaxed">
+                        โจทย์กำลังโหลด...
+                    </h3>
+                </div>
+
+                <!-- MULTIPLE CHOICE GRID -->
+                <div id="options-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Choice A, B, C, D buttons -->
+                </div>
+
+                <!-- TEACHER CONTROL ACTION BAR -->
+                <div class="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-700/60">
+                    
+                    <div class="flex items-center gap-2">
+                        <button onclick="openSolutionModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 text-sm font-semibold border border-cyan-500/30 transition flex items-center gap-2">
+                            <i class="fa-solid fa-lightbulb text-amber-400"></i>
+                            <span>เฉลยวิธีทำอย่างละเอียด</span>
+                        </button>
+                        <button onclick="triggerStealMode()" class="px-4 py-2 rounded-xl bg-rose-900/40 hover:bg-rose-800/60 text-rose-200 text-sm font-semibold border border-rose-700/50 transition flex items-center gap-2">
+                            <i class="fa-solid fa-hand-pointer"></i>
+                            <span>ส่งสิทธิ์แย่งตอบ (Steal)</span>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button onclick="skipQuestion()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-semibold border border-slate-700 transition">
+                            <i class="fa-solid fa-forward mr-1"></i> ข้ามข้อนี้
+                        </button>
+                        <button onclick="nextTurnManual()" class="px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white text-sm font-bold shadow-lg shadow-cyan-500/20 transition flex items-center gap-2">
+                            <span>ข้อถัดไป</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- VICTORY PODIUM SCREEN -->
+        <section id="victory-screen" class="hidden flex-col items-center justify-center my-auto py-8">
+            <div class="w-full max-w-4xl glass-panel rounded-3xl p-8 border border-amber-500/30 shadow-2xl text-center space-y-8 relative overflow-hidden">
+                
+                <div class="space-y-2">
+                    <span class="px-4 py-1.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-bold uppercase tracking-widest">
+                        🎉 การแข่งขันสิ้นสุดลงแล้ว
+                    </span>
+                    <h2 class="text-4xl sm:text-5xl font-black text-white tracking-wide text-gradient-gold">
+                        สรุปผลรางวัลการแข่งขัน
+                    </h2>
+                    <p class="text-slate-300">เรื่อง พลังงานความร้อนและการเปลี่ยนหน่วยอุณหภูมิ ม.1</p>
+                </div>
+
+                <!-- PODIUM 1st, 2nd, 3rd -->
+                <div id="podium-container" class="grid grid-cols-3 gap-3 sm:gap-6 items-end pt-12 pb-4 max-w-2xl mx-auto">
+                    <!-- Dynamic Podium Bars built via JS -->
+                </div>
+
+                <!-- FULL STANDINGS TABLE -->
+                <div class="bg-slate-900/80 rounded-2xl p-4 border border-slate-800 max-w-xl mx-auto">
+                    <h4 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3 text-left px-2">
+                        <i class="fa-solid fa-list-ol text-cyan-400 mr-2"></i>อันดับคะแนนรวมทั้งหมด:
+                    </h4>
+                    <div id="full-rankings-list" class="space-y-2 text-left">
+                        <!-- Rankings injected by JS -->
+                    </div>
+                </div>
+
+                <!-- PLAY AGAIN BUTTON -->
+                <div class="pt-4 flex justify-center gap-4">
+                    <button onclick="setupScreen()" class="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-bold text-lg shadow-xl shadow-cyan-500/25 transition transform hover:scale-105">
+                        <i class="fa-solid fa-rotate-right mr-2"></i> เล่นอีกครั้ง
+                    </button>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FORMULA HELPER MODAL -->
+    <div id="formula-modal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-2xl rounded-3xl border border-cyan-500/40 p-6 sm:p-8 shadow-2xl relative space-y-6">
+            <button onclick="closeFormulaModal()" class="absolute top-5 right-5 text-slate-400 hover:text-white text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="flex items-center gap-3 border-b border-slate-700/80 pb-4">
+                <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-square-root-variable"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-white">สูตรการแปลงหน่วยอุณหภูมิ</h3>
+                    <p class="text-xs text-slate-400">อ้างอิงบทเรียนวิทยาศาสตร์ ม.1</p>
+                </div>
+            </div>
+
+            <!-- Formulas Content -->
+            <div class="space-y-4">
+                <!-- Primary Formula -->
+                <div class="bg-slate-900/90 rounded-2xl p-5 border border-indigo-500/30 text-center">
+                    <span class="text-xs font-semibold text-cyan-400 uppercase tracking-widest block mb-2">สูตรแปลงหน่วยอุณหภูมิหลัก</span>
+                    <div class="text-2xl sm:text-3xl font-mono font-bold text-amber-300 py-2 tracking-wider">
+                        $$\frac{C}{5} = \frac{F - 32}{9} = \frac{R}{4} = \frac{K - 273}{5}$$
+                    </div>
+                </div>
+
+                <!-- Simple Kelvin Conversion -->
+                <div class="bg-slate-900/90 rounded-2xl p-4 border border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-3">
+                    <div class="text-left">
+                        <span class="text-xs text-slate-400 font-semibold block">แปลงระหว่าง Celsius และ Kelvin (°C ↔ K):</span>
+                        <span class="text-lg font-mono text-emerald-300 font-bold">K = C + 273</span>
+                        <span class="text-slate-400 px-2">หรือ</span>
+                        <span class="text-lg font-mono text-emerald-300 font-bold">C = K - 273</span>
+                    </div>
+                </div>
+
+                <!-- Key Legend -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-slate-300">
+                    <div class="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700">
+                        <b class="text-cyan-400">C</b> = องศาเซลเซียส (°C)
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700">
+                        <b class="text-indigo-400">F</b> = องศาฟาเรนไฮต์ (°F)
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700">
+                        <b class="text-amber-400">R</b> = องศาโรเมอร์ (°R)
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700">
+                        <b class="text-emerald-400">K</b> = เคลวิน (K)
+                    </div>
+                </div>
+
+                <!-- Delta T Explanation -->
+                <div class="p-3.5 rounded-xl bg-indigo-950/40 border border-indigo-500/20 text-xs text-indigo-200">
+                    <b class="text-cyan-300">💡 การเปลี่ยนอุณหภูมิ ($\Delta T$):</b> คำนวณจากผลต่างระหว่างอุณหภูมิหลังเปลี่ยน กับอุณหภูมิเริ่มต้น ($\Delta T = |T_2 - T_1|$)
+                </div>
+            </div>
+
+            <div class="pt-2 text-right">
+                <button onclick="closeFormulaModal()" class="px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-sm">
+                    เข้าใจแล้ว ปิดหน้าต่าง
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SOLUTION MODAL -->
+    <div id="solution-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-2xl rounded-3xl border border-amber-500/40 p-6 sm:p-8 shadow-2xl relative space-y-5">
+            <button onclick="closeSolutionModal()" class="absolute top-5 right-5 text-slate-400 hover:text-white text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="flex items-center gap-3 border-b border-slate-700/80 pb-4">
+                <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-key"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-white">เฉลยพร้อมวิธีคำนวณอย่างละเอียด</h3>
+                    <p class="text-xs text-slate-400" id="solution-q-title">ข้อที่ 1</p>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800">
+                    <span class="text-xs text-slate-400 font-semibold uppercase block mb-1">คำตอบที่ถูกต้อง:</span>
+                    <div id="solution-correct-answer" class="text-2xl font-bold text-emerald-400">
+                        B. 298 K
+                    </div>
+                </div>
+
+                <div class="p-5 rounded-2xl bg-slate-900/90 border border-indigo-500/30 space-y-3">
+                    <span class="text-xs text-cyan-400 font-semibold uppercase tracking-wider block">ขั้นตอนการคำนวณ:</span>
+                    <div id="solution-steps" class="text-base text-slate-200 leading-relaxed font-mono whitespace-pre-line">
+                        <!-- Solution steps injected by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-2 flex justify-between items-center">
+                <button onclick="closeSolutionModal()" class="px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-sm">
+                    ปิดหน้าต่าง
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCORE MANUAL EDIT MODAL -->
+    <div id="score-edit-modal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-md rounded-3xl border border-indigo-500/40 p-6 shadow-2xl relative space-y-4">
+            <h3 id="score-modal-team-name" class="text-lg font-bold text-white">ปรับคะแนนกลุ่ม</h3>
+            <div class="flex items-center gap-3 justify-center py-4">
+                <button onclick="adjustSelectedScore(-5)" class="w-12 h-12 rounded-xl bg-rose-600/30 border border-rose-500 text-rose-300 font-extrabold text-xl hover:bg-rose-600/50">-5</button>
+                <button onclick="adjustSelectedScore(-10)" class="w-12 h-12 rounded-xl bg-rose-700/30 border border-rose-600 text-rose-300 font-extrabold text-xl hover:bg-rose-700/50">-10</button>
+                <span id="score-modal-current" class="text-3xl font-bold font-mono text-amber-400 px-4">0</span>
+                <button onclick="adjustSelectedScore(+5)" class="w-12 h-12 rounded-xl bg-emerald-600/30 border border-emerald-500 text-emerald-300 font-extrabold text-xl hover:bg-emerald-600/50">+5</button>
+                <button onclick="adjustSelectedScore(+10)" class="w-12 h-12 rounded-xl bg-emerald-700/30 border border-emerald-600 text-emerald-300 font-extrabold text-xl hover:bg-emerald-700/50">+10</button>
+            </div>
+            <div class="text-center">
+                <button onclick="closeScoreModal()" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm">
+                    เสร็จสิ้น
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="w-full py-3 px-6 text-center text-xs text-slate-500 border-t border-slate-800/60 glass-panel z-10">
+        สื่อการสอนปฏิสัมพันธ์ วิชาวิทยาศาสตร์ ม.1 (Thermal Energy Unit) &bull; ออกแบบเพื่อการเรียนรู้ในชั้นเรียน
+    </footer>
+
+    <!-- GAME LOGIC SCRIPT -->
+    <script>
+        /* ==========================================
+           QUESTION BANK (18 Situation & Calculation Questions)
+           ========================================== */
+        const QUESTION_BANK = [
+            {
+                id: 1,
+                category: "แปลงหน่วย °C ↔ K",
+                question: "อากาศในห้องทดลองวิทยาศาสตร์วัดได้ 25 °C คิดเป็นกี่ Kelvin (K)?",
+                options: ["248 K", "298 K", "300 K", "325 K"],
+                correctIndex: 1,
+                solution: "ใช้สูตร: K = C + 273\nแทนค่า: K = 25 + 273 = 298 K\n\nคำตอบคือ 298 K"
+            },
+            {
+                id: 2,
+                category: "แปลงหน่วย °C ↔ °F",
+                question: "คนไข้ในโรงพยาบาลตรวจพบมีอุณหภูมิร่างกาย 104 °F คิดเป็นกี่องศาเซลเซียส (°C)?",
+                options: ["38 °C", "39 °C", "40 °C", "41 °C"],
+                correctIndex: 2,
+                solution: "ใช้สูตร: C/5 = (F - 32)/9\nแทนค่า: C/5 = (104 - 32)/9\nC/5 = 72/9 = 8\nC = 8 × 5 = 40 °C\n\nคำตอบคือ 40 °C (มีไข้สูง)"
+            },
+            {
+                id: 3,
+                category: "แปลงหน่วย °C ↔ °R",
+                question: "น้ำบริสุทธิ์เดือดที่อุณหภูมิ 100 °C คิดเป็นกี่องศาโรเมอร์ (°R)?",
+                options: ["60 °R", "75 °R", "80 °R", "90 °R"],
+                correctIndex: 2,
+                solution: "ใช้สูตร: C/5 = R/4\nแทนค่า: 100/5 = R/4\n20 = R/4\nR = 20 × 4 = 80 °R\n\nคำตอบคือ 80 °R"
+            },
+            {
+                id: 4,
+                category: "แปลงหน่วย °C ↔ K",
+                question: "สารเคมีในหลอดทดลองมีอุณหภูมิ 313 K คิดเป็นกี่องศาเซลเซียส (°C)?",
+                options: ["40 °C", "45 °C", "50 °C", "273 °C"],
+                correctIndex: 0,
+                solution: "ใช้สูตร: C = K - 273\nแทนค่า: C = 313 - 273 = 40 °C\n\nคำตอบคือ 40 °C"
+            },
+            {
+                id: 5,
+                category: "แปลงหน่วย °C ↔ °F",
+                question: "น้ำแข็งเริ่มละลายที่อุณหภูมิ 0 °C คิดเป็นกี่องศาฟาเรนไฮต์ (°F)?",
+                options: ["0 °F", "10 °F", "32 °F", "100 °F"],
+                correctIndex: 2,
+                solution: "ใช้สูตร: C/5 = (F - 32)/9\nแทนค่า: 0/5 = (F - 32)/9\n0 = F - 32  => F = 32 °F\n\nคำตอบคือ 32 °F"
+            },
+            {
+                id: 6,
+                category: "แปลงหน่วย °C ↔ °R",
+                question: "อุณหภูมิของน้ำมันประกอบอาหารวัดได้ 160 °R คิดเป็นกี่องศาเซลเซียส (°C)?",
+                options: ["120 °C", "160 °C", "200 °C", "240 °C"],
+                correctIndex: 2,
+                solution: "ใช้สูตร: C/5 = R/4\nแทนค่า: C/5 = 160/4\nC/5 = 40\nC = 40 × 5 = 200 °C\n\nคำตอบคือ 200 °C"
+            },
+            {
+                id: 7,
+                category: "แปลงหน่วย °C ↔ K",
+                question: "แก๊สไนโตรเจนเหลวมีอุณหภูมิเย็นจัด -196 °C คิดเป็นกี่ Kelvin (K)?",
+                options: ["77 K", "87 K", "469 K", "-77 K"],
+                correctIndex: 0,
+                solution: "ใช้สูตร: K = C + 273\nแทนค่า: K = -196 + 273 = 77 K\n\nคำตอบคือ 77 K"
+            },
+            {
+                id: 8,
+                category: "แปลงหน่วย °C ↔ °F",
+                question: "น้ำร้อนในแก้วมีอุณหภูมิ 60 °C คิดเป็นกี่องศาฟาเรนไฮต์ (°F)?",
+                options: ["110 °F", "120 °F", "140 °F", "152 °F"],
+                correctIndex: 2,
+                solution: "ใช้สูตร: C/5 = (F - 32)/9\nแทนค่า: 60/5 = (F - 32)/9\n12 = (F - 32)/9\nF - 32 = 12 × 9 = 108\nF = 108 + 32 = 140 °F\n\nคำตอบคือ 140 °F"
+            },
+            {
+                id: 9,
+                category: "แปลงหน่วย °C ↔ K",
+                question: "อุณหภูมิปกติของผิวหนังมนุษย์เท่ากับ 35 °C คิดเป็นกี่ Kelvin (K)?",
+                options: ["238 K", "308 K", "318 K", "325 K"],
+                correctIndex: 1,
+                solution: "ใช้สูตร: K = C + 273\nแทนค่า: K = 35 + 273 = 308 K\n\nคำตอบคือ 308 K"
+            },
+            {
+                id: 10,
+                category: "แปลงหน่วย °C ↔ °F",
+                question: "อุณหภูมิอากาศในฤดูหนาวของประเทศหนึ่งวัดได้ 50 °F คิดเป็นกี่องศาเซลเซียส (°C)?",
+                options: ["10 °C", "15 °C", "18 °C", "20 °C"],
+                correctIndex: 0,
+                solution: "ใช้สูตร: C/5 = (F - 32)/9\nแทนค่า: C/5 = (50 - 32)/9\nC/5 = 18/9 = 2\nC = 2 × 5 = 10 °C\n\nคำตอบคือ 10 °C"
+            },
+            {
+                id: 11,
+                category: "โจทย์การเปลี่ยนอุณหภูมิ (ΔT)",
+                question: "ต้มน้ำจากอุณหภูมิเริ่มต้น 25 °C จนกระทั่งอุณหภูมิเพิ่มขึ้นเป็น 80 °C อุณหภูมิของน้ำเปลี่ยนไปเท่าใด (ΔT)?",
+                options: ["55 °C", "65 °C", "75 °C", "105 °C"],
+                correctIndex: 0,
+                solution: "ใช้สูตร: ΔT = T₂ - T₁\nแทนค่า: ΔT = 80 - 25 = 55 °C\n\nคำตอบคือ อุณหภูมิเพิ่มขึ้น 55 °C"
+            },
+            {
+                id: 12,
+                category: "โจทย์การเปลี่ยนอุณหภูมิ (ΔT)",
+                question: "สารเคมีมีอุณหภูมิเริ่มต้น 50 °C นำไปแช่เย็นจนอุณหภูมิลดลงเหลือ -10 °C อุณหภูมิเปลี่ยนแปลงไปกี่องศาเซลเซียส?",
+                options: ["40 °C", "50 °C", "60 °C", "70 °C"],
+                correctIndex: 2,
+                solution: "ใช้สูตร: ΔT = |T₁ - T₂|\nแทนค่า: ΔT = |50 - (-10)| = 50 + 10 = 60 °C\n\nคำตอบคือ อุณหภูมิเปลี่ยนแปลงไป 60 °C"
+            },
+            {
+                id: 13,
+                category: "แปลงหน่วย °C ↔ K",
+                question: "ตู้แช่แข็งของห้องปฏิบัติการแสดงอุณหภูมิ 253 K คิดเป็นกี่องศาเซลเซียส (°C)?",
+                options: ["-20 °C", "-10 °C", "0 °C", "20 °C"],
+                correctIndex: 0,
+                solution: "ใช้สูตร: C = K - 273\nแทนค่า: C = 253 - 273 = -20 °C\n\nคำตอบคือ -20 °C"
+            },
+            {
+                id: 14,
+                category: "แปลงหน่วย °R ↔ °F",
+                question: "โลหะชิ้นหนึ่งถูกทดสอบวัดอุณหภูมิได้ 20 °R คิดเป็นกี่องศาฟาเรนไฮต์ (°F)?",
+                options: ["65 °F", "77 °F", "85 °F", "92 °F"],
+                correctIndex: 1,
+                solution: "ใช้สูตร: (F - 32)/9 = R/4\nแทนค่า: (F - 32)/9 = 20/4 = 5\nF - 32 = 5 × 9 = 45\nF = 45 + 32 = 77 °F\n\nคำตอบคือ 77 °F"
+            },
+            {
+                id: 15,
+                category: "แปลงหน่วย °C ↔ °R",
+                question: "ห้องปรับอากาศตั้งไว้ที่อุณหภูมิ 20 °C คิดเป็นกี่องศาโรเมอร์ (°R)?",
+                options: ["12 °R", "16 °R", "20 °R", "24 °R"],
+                correctIndex: 1,
+                solution: "ใช้สูตร: C/5 = R/4\nแทนค่า: 20/5 = R/4\n4 = R/4 => R = 16 °R\n\nคำตอบคือ 16 °R"
+            },
+            {
+                id: 16,
+                category: "แปลงหน่วย °C ↔ K",
+                question: "ไอศกรีมแช่แข็งเก็บไว้ที่อุณหภูมิ -15 °C คิดเป็นกี่ Kelvin (K)?",
+                options: ["248 K", "258 K", "268 K", "288 K"],
+                correctIndex: 1,
+                solution: "ใช้สูตร: K = C + 273\nแทนค่า: K = -15 + 273 = 258 K\n\nคำตอบคือ 258 K"
+            },
+            {
+                id: 17,
+                category: "แปลงหน่วย °C ↔ °F",
+                question: "อุณหภูมิร่างกายมนุษย์ปกติ 37 °C คิดเป็นกี่องศาฟาเรนไฮต์ (°F)?",
+                options: ["97.4 °F", "98.6 °F", "100.2 °F", "102.0 °F"],
+                correctIndex: 1,
+                solution: "ใช้สูตร: C/5 = (F - 32)/9\nแทนค่า: 37/5 = (F - 32)/9\n7.4 = (F - 32)/9\nF - 32 = 7.4 × 9 = 66.6\nF = 66.6 + 32 = 98.6 °F\n\nคำตอบคือ 98.6 °F"
+            },
+            {
+                id: 18,
+                category: "โจทย์ประยุกต์การเปลี่ยนอุณหภูมิ",
+                question: "น้ำอุณหภูมิเริ่มต้น 30 °C ถูกต้มจนอุณหภูมิสูงขึ้นถึง 363 K อุณหภูมิของน้ำเพิ่มขึ้นกี่องศาเซลเซียส?",
+                options: ["40 °C", "50 °C", "60 °C", "70 °C"],
+                correctIndex: 2,
+                solution: "ขั้นที่ 1: แปลง 363 K เป็น °C\nC = 363 - 273 = 90 °C\n\nขั้นที่ 2: คำนวณอุณหภูมิที่เพิ่มขึ้น (ΔT)\nΔT = 90 - 30 = 60 °C\n\nคำตอบคือ เพิ่มขึ้น 60 °C"
+            }
+        ];
+
+        /* DEFAULT GROUP NAMES & BADGES */
+        const DEFAULT_PRESETS = [
+            { name: "กลุ่ม 1: ทีมเพลิงสุริยะ", bg: "bg-rose-500", text: "text-rose-500" },
+            { name: "กลุ่ม 2: ทีมศูนย์สัมบูรณ์", bg: "bg-cyan-500", text: "text-cyan-500" },
+            { name: "กลุ่ม 3: ทีมฟาเรนไฮต์", bg: "bg-amber-500", text: "text-amber-500" },
+            { name: "กลุ่ม 4: ทีมเคลวินพาวเวอร์", bg: "bg-emerald-500", text: "text-emerald-500" },
+            { name: "กลุ่ม 5: ทีมควอนตัม", bg: "bg-indigo-500", text: "text-indigo-500" },
+            { name: "กลุ่ม 6: ทีมพลาสม่าเดลตา", bg: "bg-purple-500", text: "text-purple-500" },
+            { name: "กลุ่ม 7: ทีมเทอร์โมมอนสเตอร์", bg: "bg-orange-500", text: "text-orange-500" },
+            { name: "กลุ่ม 8: ทีมอะตอมความร้อน", bg: "bg-teal-500", text: "text-teal-500" }
+        ];
+
+        /* ==========================================
+           GAME STATE ENGINE
+           ========================================== */
+        let state = {
+            groupCount: 4,
+            groups: [],
+            currentTurnIndex: 0,
+            questionList: [],
+            currentQuestionIdx: 0,
+            timerDuration: 45,
+            timerRemaining: 45,
+            timerInterval: null,
+            isStealMode: false,
+            stealGroupIndex: null,
+            soundEnabled: true,
+            selectedEditingGroupIndex: null
+        };
+
+        /* WEB AUDIO API SYNTHESIZER */
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function playClickSound() {
+            if (!state.soundEnabled) return;
+            try {
+                const ctx = getAudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.05);
+                gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.05);
+            } catch(e) {}
+        }
+
+        function playTickSound() {
+            if (!state.soundEnabled) return;
+            try {
+                const ctx = getAudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(850, ctx.currentTime);
+                gain.gain.setValueAtTime(0.08, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.04);
+            } catch(e) {}
+        }
+
+        function playCorrectSound() {
+            if (!state.soundEnabled) return;
+            try {
+                const ctx = getAudioContext();
+                const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                notes.forEach((freq, idx) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.08);
+                    gain.gain.setValueAtTime(0, ctx.currentTime + idx * 0.08);
+                    gain.gain.linearRampToValueAtTime(0.25, ctx.currentTime + idx * 0.08 + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.08 + 0.35);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(ctx.currentTime + idx * 0.08);
+                    osc.stop(ctx.currentTime + idx * 0.08 + 0.35);
+                });
+            } catch(e) {}
+        }
+
+        function playWrongSound() {
+            if (!state.soundEnabled) return;
+            try {
+                const ctx = getAudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(110, ctx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.3);
+            } catch(e) {}
+        }
+
+        function playAlarmSound() {
+            if (!state.soundEnabled) return;
+            try {
+                const ctx = getAudioContext();
+                for (let i = 0; i < 3; i++) {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sawtooth';
+                    const startTime = ctx.currentTime + i * 0.15;
+                    osc.frequency.setValueAtTime(880, startTime);
+                    osc.frequency.linearRampToValueAtTime(440, startTime + 0.12);
+                    gain.gain.setValueAtTime(0.2, startTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.12);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(startTime);
+                    osc.stop(startTime + 0.12);
+                }
+            } catch(e) {}
+        }
+
+        function playVictoryFanfare() {
+            if (!state.soundEnabled) return;
+            try {
+                const ctx = getAudioContext();
+                const melody = [
+                    { f: 523.25, d: 0.15, t: 0 },
+                    { f: 659.25, d: 0.15, t: 0.15 },
+                    { f: 783.99, d: 0.15, t: 0.30 },
+                    { f: 1046.50, d: 0.4, t: 0.45 },
+                    { f: 880.00, d: 0.2, t: 0.90 },
+                    { f: 1046.50, d: 0.6, t: 1.10 }
+                ];
+                melody.forEach(note => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(note.f, ctx.currentTime + note.t);
+                    gain.gain.setValueAtTime(0.25, ctx.currentTime + note.t);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + note.t + note.d);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(ctx.currentTime + note.t);
+                    osc.stop(ctx.currentTime + note.t + note.d);
+                });
+            } catch(e) {}
+        }
+
+        function toggleSound() {
+            state.soundEnabled = !state.soundEnabled;
+            const icon = document.getElementById('sound-icon');
+            const text = document.getElementById('sound-text');
+            if (state.soundEnabled) {
+                icon.className = 'fa-solid fa-volume-high text-cyan-400';
+                text.innerText = 'เปิดเสียง';
+                playClickSound();
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark text-slate-500';
+                text.innerText = 'ปิดเสียง';
+            }
+        }
+
+        /* INITIALIZATION & SETUP FUNCTIONS */
+        window.onload = function() {
+            renderGroupInputs();
+        };
+
+        function setGroupCount(count) {
+            playClickSound();
+            state.groupCount = count;
+            document.querySelectorAll('.btn-group-count').forEach(btn => {
+                if (parseInt(btn.dataset.count) === count) {
+                    btn.className = "btn-group-count py-2.5 rounded-xl font-bold border transition bg-indigo-600 border-indigo-400 text-white shadow-lg shadow-indigo-500/30";
+                } else {
+                    btn.className = "btn-group-count py-2.5 rounded-xl font-bold border transition bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-200";
+                }
+            });
+            renderGroupInputs();
+        }
+
+        function renderGroupInputs() {
+            const container = document.getElementById('group-inputs-container');
+            container.innerHTML = '';
+            for (let i = 0; i < state.groupCount; i++) {
+                const defaultName = DEFAULT_PRESETS[i] ? DEFAULT_PRESETS[i].name : `กลุ่มที่ ${i+1}`;
+                const div = document.createElement('div');
+                div.className = "flex items-center gap-2 bg-slate-900/90 p-2 rounded-xl border border-slate-800";
+                div.innerHTML = `
+                    <span class="w-8 h-8 rounded-lg ${DEFAULT_PRESETS[i].bg} text-slate-950 font-extrabold flex items-center justify-center text-xs">
+                        G${i+1}
+                    </span>
+                    <input type="text" id="group-input-${i}" value="${defaultName}" class="w-full bg-transparent text-sm text-slate-200 font-medium focus:outline-none" placeholder="กรอกชื่อกลุ่ม">
+                `;
+                container.appendChild(div);
+            }
+        }
+
+        function startGame() {
+            playClickSound();
+            
+            // Build groups array
+            state.groups = [];
+            for (let i = 0; i < state.groupCount; i++) {
+                const val = document.getElementById(`group-input-${i}`).value.trim();
+                const name = val !== "" ? val : `กลุ่มที่ ${i+1}`;
+                state.groups.push({
+                    id: i,
+                    name: name,
+                    score: 0,
+                    bg: DEFAULT_PRESETS[i].bg,
+                    text: DEFAULT_PRESETS[i].text
+                });
+            }
+
+            // Shuffle or sliced question set
+            const desiredCount = parseInt(document.getElementById('question-count-select').value);
+            state.questionList = [...QUESTION_BANK].sort(() => 0.5 - Math.random()).slice(0, desiredCount);
+            state.currentQuestionIdx = 0;
+            state.currentTurnIndex = 0;
+            state.timerDuration = parseInt(document.getElementById('timer-select').value);
+
+            // Hide setup, show game
+            document.getElementById('setup-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            document.getElementById('game-screen').classList.add('flex');
+            document.getElementById('btn-restart-game').classList.remove('hidden');
+
+            renderLeaderboard();
+            loadCurrentQuestion();
+        }
+
+        function renderLeaderboard() {
+            const container = document.getElementById('leaderboard-bar');
+            container.innerHTML = '';
+            
+            state.groups.forEach((g, idx) => {
+                const isTurn = idx === state.currentTurnIndex;
+                const card = document.createElement('div');
+                card.className = `glass-panel rounded-2xl p-3 border flex items-center justify-between cursor-pointer transition ${isTurn ? 'active-turn-ring bg-cyan-950/40' : 'border-slate-800'}`;
+                card.onclick = () => openScoreModal(idx);
+                card.innerHTML = `
+                    <div class="flex items-center gap-2 overflow-hidden">
+                        <span class="w-7 h-7 rounded-lg ${g.bg} text-slate-950 font-extrabold flex items-center justify-center text-xs flex-shrink-0">
+                            G${g.id+1}
+                        </span>
+                        <div class="truncate">
+                            <h4 class="text-xs font-bold text-slate-200 truncate">${g.name}</h4>
+                            <span class="text-[10px] text-slate-400">คลิกปรับคะแนน</span>
+                        </div>
+                    </div>
+                    <div class="text-lg font-black font-mono text-amber-400 ml-2">
+                        ${g.score}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function loadCurrentQuestion() {
+            clearInterval(state.timerInterval);
+            state.isStealMode = false;
+            document.getElementById('steal-alert-banner').classList.add('hidden');
+
+            if (state.currentQuestionIdx >= state.questionList.length) {
+                endGame();
+                return;
+            }
+
+            const q = state.questionList[state.currentQuestionIdx];
+            const currentGroup = state.groups[state.currentTurnIndex];
+
+            // Render Meta
+            document.getElementById('turn-avatar').className = `w-12 h-12 rounded-2xl ${currentGroup.bg} flex items-center justify-center text-slate-950 font-extrabold text-xl shadow-lg`;
+            document.getElementById('turn-avatar').innerText = `G${currentGroup.id + 1}`;
+            document.getElementById('turn-group-name').innerText = currentGroup.name;
+            document.getElementById('question-progress').innerText = `ข้อที่ ${state.currentQuestionIdx + 1} / ${state.questionList.length}`;
+            document.getElementById('question-category').innerText = `หมวด: ${q.category}`;
+
+            // Render Question Text
+            document.getElementById('question-text').innerText = q.question;
+
+            // Render Multiple Choice Grid
+            const grid = document.getElementById('options-grid');
+            grid.innerHTML = '';
+
+            const prefixes = ['A', 'B', 'C', 'D'];
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "glass-card w-full p-4 rounded-2xl text-left flex items-center gap-4 border border-slate-700 hover:border-cyan-400 transition group";
+                btn.onclick = () => handleAnswerSelect(idx);
+                btn.innerHTML = `
+                    <span class="w-10 h-10 rounded-xl bg-slate-800 group-hover:bg-cyan-500 group-hover:text-slate-950 text-cyan-300 font-bold flex items-center justify-center text-base border border-slate-700 transition">
+                        ${prefixes[idx]}
+                    </span>
+                    <span class="text-lg font-semibold text-slate-100 flex-1">${opt}</span>
+                `;
+                grid.appendChild(btn);
+            });
+
+            // Start Timer
+            startTimer();
+            renderLeaderboard();
+        }
+
+        function startTimer() {
+            if (state.timerDuration === 0) {
+                document.getElementById('timer-box').classList.add('hidden');
+                return;
+            }
+            document.getElementById('timer-box').classList.remove('hidden');
+            state.timerRemaining = state.timerDuration;
+            updateTimerDisplay();
+
+            state.timerInterval = setInterval(() => {
+                state.timerRemaining--;
+                updateTimerDisplay();
+
+                if (state.timerRemaining <= 5 && state.timerRemaining > 0) {
+                    playTickSound();
+                }
+
+                if (state.timerRemaining <= 0) {
+                    clearInterval(state.timerInterval);
+                    playWrongSound();
+                    triggerStealMode();
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const text = document.getElementById('timer-text');
+            text.innerText = `${state.timerRemaining}s`;
+            if (state.timerRemaining <= 10) {
+                text.className = "text-2xl font-black font-mono text-rose-500 animate-pulse min-w-[3.5rem] text-center";
+            } else {
+                text.className = "text-2xl font-black font-mono text-amber-400 min-w-[3.5rem] text-center";
+            }
+        }
+
+        function handleAnswerSelect(optionIndex) {
+            clearInterval(state.timerInterval);
+            const q = state.questionList[state.currentQuestionIdx];
+            const isCorrect = (optionIndex === q.correctIndex);
+
+            if (!state.isStealMode) {
+                // Normal Turn
+                if (isCorrect) {
+                    playCorrectSound();
+                    state.groups[state.currentTurnIndex].score += 10;
+                    renderLeaderboard();
+                    showCorrectFeedbackModal(() => {
+                        advanceTurn();
+                    });
+                } else {
+                    playWrongSound();
+                    triggerStealMode();
+                }
+            } else {
+                // Steal Mode Answer
+                if (isCorrect) {
+                    playCorrectSound();
+                    if (state.stealGroupIndex !== null) {
+                        state.groups[state.stealGroupIndex].score += 10;
+                    }
+                    renderLeaderboard();
+                    showCorrectFeedbackModal(() => {
+                        advanceTurn();
+                    });
+                } else {
+                    playWrongSound();
+                    showWrongFeedbackModal(() => {
+                        advanceTurn();
+                    });
+                }
+            }
+        }
+
+        function triggerStealMode() {
+            state.isStealMode = true;
+            playAlarmSound();
+
+            const banner = document.getElementById('steal-alert-banner');
+            banner.classList.remove('hidden');
+
+            const btnContainer = document.getElementById('steal-team-buttons');
+            btnContainer.innerHTML = '';
+
+            state.groups.forEach((g, idx) => {
+                if (idx !== state.currentTurnIndex) {
+                    const btn = document.createElement('button');
+                    btn.className = `px-3 py-1.5 rounded-xl ${g.bg} text-slate-950 font-bold text-xs shadow-md hover:scale-105 transition`;
+                    btn.innerText = `ให้สิทธิ์: ${g.name}`;
+                    btn.onclick = () => selectStealTeam(idx);
+                    btnContainer.appendChild(btn);
+                }
+            });
+        }
+
+        function selectStealTeam(groupIndex) {
+            playClickSound();
+            state.stealGroupIndex = groupIndex;
+            const targetGroup = state.groups[groupIndex];
+            
+            const btnContainer = document.getElementById('steal-team-buttons');
+            btnContainer.innerHTML = `
+                <div class="px-3 py-1 bg-amber-400 text-slate-950 font-bold text-xs rounded-xl flex items-center gap-2">
+                    🎯 กำลังตอบโดย: ${targetGroup.name} (+10 คะแนนถ้าถูก)
+                </div>
+            `;
+        }
+
+        function showCorrectFeedbackModal(onComplete) {
+            openSolutionModal();
+            setTimeout(() => {
+                // auto close or wait teacher
+            }, 100);
+        }
+
+        function showWrongFeedbackModal(onComplete) {
+            openSolutionModal();
+        }
+
+        function advanceTurn() {
+            state.currentQuestionIdx++;
+            state.currentTurnIndex = (state.currentTurnIndex + 1) % state.groups.length;
+            loadCurrentQuestion();
+        }
+
+        function skipQuestion() {
+            playClickSound();
+            advanceTurn();
+        }
+
+        function nextTurnManual() {
+            playClickSound();
+            advanceTurn();
+        }
+
+        /* MODALS LOGIC */
+        function openFormulaModal() {
+            playClickSound();
+            document.getElementById('formula-modal').classList.remove('hidden');
+        }
+        function closeFormulaModal() {
+            playClickSound();
+            document.getElementById('formula-modal').classList.add('hidden');
+        }
+
+        function openSolutionModal() {
+            playClickSound();
+            const q = state.questionList[state.currentQuestionIdx];
+            document.getElementById('solution-q-title').innerText = `เฉลยข้อที่ ${state.currentQuestionIdx + 1}: ${q.category}`;
+            document.getElementById('solution-correct-answer').innerText = `คำตอบ: ${q.options[q.correctIndex]}`;
+            document.getElementById('solution-steps').innerText = q.solution;
+            document.getElementById('solution-modal').classList.remove('hidden');
+        }
+        function closeSolutionModal() {
+            playClickSound();
+            document.getElementById('solution-modal').classList.add('hidden');
+        }
+
+        function openScoreModal(groupIndex) {
+            playClickSound();
+            state.selectedEditingGroupIndex = groupIndex;
+            const g = state.groups[groupIndex];
+            document.getElementById('score-modal-team-name').innerText = `ปรับคะแนน: ${g.name}`;
+            document.getElementById('score-modal-current').innerText = g.score;
+            document.getElementById('score-edit-modal').classList.remove('hidden');
+        }
+        function adjustSelectedScore(delta) {
+            playClickSound();
+            if (state.selectedEditingGroupIndex !== null) {
+                state.groups[state.selectedEditingGroupIndex].score += delta;
+                document.getElementById('score-modal-current').innerText = state.groups[state.selectedEditingGroupIndex].score;
+                renderLeaderboard();
+            }
+        }
+        function closeScoreModal() {
+            playClickSound();
+            document.getElementById('score-edit-modal').classList.add('hidden');
+        }
+
+        function confirmResetGame() {
+            setupScreen();
+        }
+
+        function setupScreen() {
+            clearInterval(state.timerInterval);
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('victory-screen').classList.add('hidden');
+            document.getElementById('setup-screen').classList.remove('hidden');
+            document.getElementById('btn-restart-game').classList.add('hidden');
+            stopConfetti();
+        }
+
+        /* END GAME & PODIUM SCREEN */
+        function endGame() {
+            clearInterval(state.timerInterval);
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('victory-screen').classList.remove('hidden');
+            document.getElementById('victory-screen').classList.add('flex');
+
+            playVictoryFanfare();
+            startConfetti();
+
+            // Sort groups by score descending
+            const sorted = [...state.groups].sort((a, b) => b.score - a.score);
+
+            // Render Podium (1st, 2nd, 3rd)
+            const podium = document.getElementById('podium-container');
+            podium.innerHTML = '';
+
+            // Order for display: 2nd, 1st, 3rd
+            const podiumOrder = [
+                { rank: 2, item: sorted[1], height: 'h-40', color: 'from-slate-400 to-slate-600', icon: '🥈' },
+                { rank: 1, item: sorted[0], height: 'h-56', color: 'from-amber-400 to-amber-600', icon: '👑 🥇' },
+                { rank: 3, item: sorted[2], height: 'h-32', color: 'from-amber-700 to-amber-900', icon: '🥉' }
+            ];
+
+            podiumOrder.forEach(p => {
+                if (p.item) {
+                    const col = document.createElement('div');
+                    col.className = 'flex flex-col items-center justify-end';
+                    col.innerHTML = `
+                        <div class="mb-2 text-center">
+                            <span class="text-2xl">${p.icon}</span>
+                            <h4 class="text-sm sm:text-base font-bold text-white truncate max-w-[100px] sm:max-w-[140px]">${p.item.name}</h4>
+                            <span class="text-sm font-black font-mono text-amber-300">${p.item.score} คะแนน</span>
+                        </div>
+                        <div class="w-full ${p.height} rounded-t-2xl bg-gradient-to-t ${p.color} flex items-center justify-center font-black text-2xl text-slate-950 shadow-xl border-t border-white/20">
+                            อันดับ ${p.rank}
+                        </div>
+                    `;
+                    podium.appendChild(col);
+                }
+            });
+
+            // Render Full Standings Table
+            const rankings = document.getElementById('full-rankings-list');
+            rankings.innerHTML = '';
+            sorted.forEach((g, idx) => {
+                const row = document.createElement('div');
+                row.className = "flex items-center justify-between p-2.5 rounded-xl bg-slate-800/60 border border-slate-700 text-sm";
+                row.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="font-extrabold text-slate-400 w-6">#${idx + 1}</span>
+                        <span class="font-semibold text-white">${g.name}</span>
+                    </div>
+                    <span class="font-mono font-bold text-amber-400 text-base">${g.score} คะแนน</span>
+                `;
+                rankings.appendChild(row);
+            });
+        }
+
+        /* CONFETTI CANVAS ANIMATION ENGINE */
+        let confettiInterval = null;
+        function startConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const particles = [];
+            const colors = ['#f59e0b', '#10b981', '#06b6d4', '#8b5cf6', '#ec4899'];
+
+            for (let i = 0; i < 120; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    size: Math.random() * 8 + 4,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    speed: Math.random() * 3 + 2,
+                    angle: Math.random() * 360
+                });
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => {
+                    ctx.save();
+                    ctx.fillStyle = p.color;
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.angle);
+                    ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+                    ctx.restore();
+
+                    p.y += p.speed;
+                    p.angle += 0.05;
+
+                    if (p.y > canvas.height) {
+                        p.y = -20;
+                        p.x = Math.random() * canvas.width;
+                    }
+                });
+            }
+
+            confettiInterval = setInterval(draw, 1000 / 60);
+        }
+
+        function stopConfetti() {
+            if (confettiInterval) {
+                clearInterval(confettiInterval);
+                const canvas = document.getElementById('confetti-canvas');
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+    </script>
+</body>
+</html>
