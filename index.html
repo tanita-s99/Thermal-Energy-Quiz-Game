@@ -512,6 +512,69 @@
         </div>
     </div>
 
+    <!-- NEW: SCORE REWARD SUCCESS POP-UP OVERLAY -->
+    <div id="score-reward-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
+        <div class="glass-panel w-full max-w-lg rounded-3xl border-2 border-emerald-400/60 p-6 sm:p-8 shadow-2xl relative text-center space-y-5 transform animate-scaleUp">
+            
+            <div id="reward-modal-badge" class="px-4 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-bold uppercase tracking-wider inline-block">
+                🎉 ตอบถูกต้อง! (+10 คะแนน)
+            </div>
+
+            <div id="reward-group-avatar" class="w-16 h-16 rounded-2xl bg-cyan-500 text-slate-950 font-black text-2xl flex items-center justify-center shadow-lg mx-auto">
+                G1
+            </div>
+
+            <div class="space-y-1">
+                <h3 id="reward-modal-title" class="text-3xl font-extrabold text-white">
+                    ตอบถูกต้อง!
+                </h3>
+                <p id="reward-group-name" class="text-xl font-bold text-cyan-300">กลุ่มที่ 1</p>
+            </div>
+
+            <div class="bg-slate-900/90 rounded-2xl p-4 border border-slate-800 flex items-center justify-around">
+                <div>
+                    <span class="text-xs text-slate-400 font-semibold block">คะแนนที่ได้รับ</span>
+                    <span class="text-3xl font-black font-mono text-emerald-400">+10</span>
+                </div>
+                <div class="w-px h-10 bg-slate-800"></div>
+                <div>
+                    <span class="text-xs text-slate-400 font-semibold block">คะแนนรวมใหม่</span>
+                    <span id="reward-new-score" class="text-3xl font-black font-mono text-amber-400">10 คะแนน</span>
+                </div>
+            </div>
+
+            <div class="pt-2 flex flex-col sm:flex-row gap-3 justify-center">
+                <button onclick="openSolutionModal()" class="px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold text-sm border border-cyan-500/30 transition">
+                    <i class="fa-solid fa-lightbulb mr-1.5 text-amber-400"></i> ดูวิธีคิดคำนวณ
+                </button>
+                <button onclick="closeRewardModalAndAdvance()" class="px-7 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black text-base shadow-lg shadow-emerald-500/30 transition transform hover:scale-105">
+                    ข้อถัดไป <i class="fa-solid fa-arrow-right ml-1.5"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW: WRONG ANSWER POP-UP OVERLAY -->
+    <div id="wrong-reward-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-md rounded-3xl border-2 border-rose-500/60 p-6 shadow-2xl relative text-center space-y-5">
+            <div class="w-16 h-16 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center text-3xl font-black mx-auto border border-rose-500/40">
+                <i class="fa-solid fa-xmark"></i>
+            </div>
+            <div>
+                <h3 id="wrong-modal-title" class="text-2xl font-black text-rose-300">ยังไม่ถูกต้อง!</h3>
+                <p id="wrong-modal-desc" class="text-sm text-slate-300 mt-1">กลุ่มหลักตอบผิด เข้าสู่โหมดแย่งตอบ!</p>
+            </div>
+            <div id="wrong-modal-actions" class="flex flex-col gap-2 pt-2">
+                <button id="btn-wrong-steal" onclick="closeWrongModalAndSteal()" class="w-full py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm shadow-lg shadow-rose-600/30 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-bolt"></i> เปิดโหมดแย่งตอบ (Steal Mode)
+                </button>
+                <button onclick="closeWrongModalAndAdvance()" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm transition">
+                    ข้ามไปข้อถัดไป
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- FOOTER -->
     <footer class="w-full py-3 px-6 text-center text-xs text-slate-500 border-t border-slate-800/60 glass-panel z-10">
         สื่อการสอนปฏิสัมพันธ์ วิชาวิทยาศาสตร์ ม.1 (Thermal Energy Unit) &bull; ออกแบบเพื่อการเรียนรู้ในชั้นเรียน
@@ -1036,29 +1099,24 @@
                     playCorrectSound();
                     state.groups[state.currentTurnIndex].score += 10;
                     renderLeaderboard();
-                    showCorrectFeedbackModal(() => {
-                        advanceTurn();
-                    });
+                    showScoreRewardModal(state.groups[state.currentTurnIndex], false);
                 } else {
                     playWrongSound();
-                    triggerStealMode();
+                    showWrongRewardModal(state.groups[state.currentTurnIndex], false);
                 }
             } else {
                 // Steal Mode Answer
+                const actingGroupIndex = state.stealGroupIndex !== null ? state.stealGroupIndex : state.currentTurnIndex;
+                const actingGroup = state.groups[actingGroupIndex];
+
                 if (isCorrect) {
                     playCorrectSound();
-                    if (state.stealGroupIndex !== null) {
-                        state.groups[state.stealGroupIndex].score += 10;
-                    }
+                    actingGroup.score += 10;
                     renderLeaderboard();
-                    showCorrectFeedbackModal(() => {
-                        advanceTurn();
-                    });
+                    showScoreRewardModal(actingGroup, true);
                 } else {
                     playWrongSound();
-                    showWrongFeedbackModal(() => {
-                        advanceTurn();
-                    });
+                    showWrongRewardModal(actingGroup, true);
                 }
             }
         }
@@ -1091,21 +1149,76 @@
             
             const btnContainer = document.getElementById('steal-team-buttons');
             btnContainer.innerHTML = `
-                <div class="px-3 py-1 bg-amber-400 text-slate-950 font-bold text-xs rounded-xl flex items-center gap-2">
-                    🎯 กำลังตอบโดย: ${targetGroup.name} (+10 คะแนนถ้าถูก)
+                <div class="px-3 py-1 bg-amber-400 text-slate-950 font-bold text-xs rounded-xl flex items-center gap-2 animate-pulse">
+                    ⚡ กำลังตอบโดย: ${targetGroup.name} (+10 คะแนนถ้าถูก)
                 </div>
             `;
         }
 
-        function showCorrectFeedbackModal(onComplete) {
-            openSolutionModal();
-            setTimeout(() => {
-                // auto close or wait teacher
-            }, 100);
+        /* REWARD POP-UP MODAL CONTROLLERS */
+        function showScoreRewardModal(group, isSteal) {
+            const modal = document.getElementById('score-reward-modal');
+            const titleEl = document.getElementById('reward-modal-title');
+            const badgeEl = document.getElementById('reward-modal-badge');
+            const groupNameEl = document.getElementById('reward-group-name');
+            const groupAvatarEl = document.getElementById('reward-group-avatar');
+            const newScoreEl = document.getElementById('reward-new-score');
+
+            if (isSteal) {
+                badgeEl.className = "px-4 py-1.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-bold uppercase tracking-wider inline-block";
+                badgeEl.innerText = "⚡ STEAL SUCCESS! แย่งตอบสำเร็จ (+10 คะแนน)";
+                titleEl.innerText = "แย่งตอบถูกต้อง!";
+            } else {
+                badgeEl.className = "px-4 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-bold uppercase tracking-wider inline-block";
+                badgeEl.innerText = "🎉 ตอบถูกต้อง! (+10 คะแนน)";
+                titleEl.innerText = "ตอบถูกต้อง!";
+            }
+
+            groupAvatarEl.className = `w-16 h-16 rounded-2xl ${group.bg} text-slate-950 font-black text-2xl flex items-center justify-center shadow-lg mx-auto`;
+            groupAvatarEl.innerText = `G${group.id + 1}`;
+            groupNameEl.innerText = group.name;
+            newScoreEl.innerText = `${group.score} คะแนน`;
+
+            modal.classList.remove('hidden');
+            startConfetti();
+            setTimeout(() => stopConfetti(), 3500);
         }
 
-        function showWrongFeedbackModal(onComplete) {
-            openSolutionModal();
+        function closeRewardModalAndAdvance() {
+            playClickSound();
+            document.getElementById('score-reward-modal').classList.add('hidden');
+            advanceTurn();
+        }
+
+        function showWrongRewardModal(group, isStealModeActive) {
+            const modal = document.getElementById('wrong-reward-modal');
+            const titleEl = document.getElementById('wrong-modal-title');
+            const descEl = document.getElementById('wrong-modal-desc');
+            const btnSteal = document.getElementById('btn-wrong-steal');
+
+            if (isStealModeActive) {
+                titleEl.innerText = "การแย่งตอบยังไม่ถูกต้อง!";
+                descEl.innerText = `กลุ่ม ${group.name} ตอบยังไม่ถูกในโหมดแย่งตอบ`;
+                btnSteal.classList.add('hidden');
+            } else {
+                titleEl.innerText = "ยังไม่ถูกต้อง!";
+                descEl.innerText = `กลุ่ม ${group.name} ตอบยังไม่ถูกต้อง เข้าสู่โหมดแย่งตอบ!`;
+                btnSteal.classList.remove('hidden');
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeWrongModalAndSteal() {
+            playClickSound();
+            document.getElementById('wrong-reward-modal').classList.add('hidden');
+            triggerStealMode();
+        }
+
+        function closeWrongModalAndAdvance() {
+            playClickSound();
+            document.getElementById('wrong-reward-modal').classList.add('hidden');
+            advanceTurn();
         }
 
         function advanceTurn() {
